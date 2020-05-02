@@ -12,4 +12,4 @@ const firebaseAuthConfig = firebase.initializeApp({
   measurementId: process.env.MEASUREMENT_ID,
 });
 
-module.exports = firebaseAuthConfig
+module.exports = firebaseAuthConfig 

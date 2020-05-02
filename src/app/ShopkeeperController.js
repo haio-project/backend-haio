@@ -5,13 +5,13 @@ const shopkeeperRef = firebaseAdminConfig.firestore().collection("shopkeeper");
 
 class ShopkeeperController {
   async signup(req, res) {
-    console.log("Request received");
     const {
       displayName,
       email,
       phoneNumber,
       documentNumber,
       password,
+      location
     } = req.body;
 
     const verifyEmailExists = await shopkeeperRef
@@ -46,6 +46,8 @@ class ShopkeeperController {
         phoneNumber,
         documentNumber,
         password,
+        latitude,
+        longitude,
       });
       await firebaseAuthConfig
         .auth()
@@ -61,6 +63,7 @@ class ShopkeeperController {
       displayName,
       email,
       phoneNumber,
+      location,
       documentNumber,
       password,
     });
