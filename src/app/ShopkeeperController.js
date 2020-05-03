@@ -11,7 +11,9 @@ class ShopkeeperController {
       phoneNumber,
       documentNumber,
       password,
-      location
+      location,
+      latitude,
+      longitude
     } = req.body;
 
     const verifyEmailExists = await shopkeeperRef
@@ -46,6 +48,7 @@ class ShopkeeperController {
         phoneNumber,
         documentNumber,
         password,
+        location,
         latitude,
         longitude,
       });
@@ -66,6 +69,8 @@ class ShopkeeperController {
       location,
       documentNumber,
       password,
+      latitude,
+      longitude,
     });
   }
 }

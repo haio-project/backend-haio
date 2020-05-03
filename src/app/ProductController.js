@@ -7,7 +7,7 @@ const productRef = firebaseAdminConfig.firestore().collection("product");
 
 class ProductController {
   async registerProduct(req, res) {
-    const { displayName, email, quantity } = req.body;
+    const { displayName, email, quantity, price } = req.body;
 
     const shopkeeperData = await shopkeeperRef
       .doc(email)
@@ -46,6 +46,7 @@ class ProductController {
           latitude,
           longitude,
           hash,
+          price,
         })
         .catch((err) => {
           console.log(err.message);
@@ -59,7 +60,7 @@ class ProductController {
         await newDoc
           .collection("Shops")
           .doc(email)
-          .set({ email, quantity, latitude, longitude, hash });
+          .set({ email, quantity, latitude, longitude, hash, price });
       } catch (err) {
         console.log(err.message);
         return res.status(500).json({ err });
@@ -129,6 +130,7 @@ class ProductController {
   async bestShop(req, res) {
     const { shoplist, longitude, latitude } = req.body;
     let availabilityShop = new Object();
+    let priceProduct = new Object();
     var uidProduct;
     const range = GetGeohashRange(
       parseFloat(latitude),
@@ -155,13 +157,36 @@ class ProductController {
             if (doc.data().quantity >= product.quantity) {
               if (typeof availabilityShop[doc.data().email] == "undefined") {
                 availabilityShop[doc.data().email] = [product.displayName];
+                priceProduct[doc.data().email] = parseFloat(doc.data().price);
               } else {
                 availabilityShop[doc.data().email].push(product.displayName);
+                priceProduct[doc.data().email] += parseFloat(product.price);
               }
             }
           });
         }
-       return res.json(Object.entries(availabilityShop));
+        var minPrice = Number.MAX_SAFE_INTEGER,
+          maxProducts = -1,
+          sellerEmail = "";
+        for (var [key, value] of Object.entries(availabilityShop)) {
+          if (value.length > maxProducts) {
+            maxProducts = value.length;
+            sellerEmail = key;
+            minPrice = priceProduct[key];
+          } else if (
+            value.length == maxProducts &&
+            minPrice > priceProduct[key]
+          ) {
+            maxProducts = value.length;
+            sellerEmail = key;
+            minPrice = priceProduct[key];
+          }
+        }
+        return res.json({
+          minPrice,
+          sellerEmail,
+          maxProducts,
+        });
       }
     }
   }
