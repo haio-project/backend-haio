@@ -82,36 +82,30 @@ class ProductController {
     const { displayName, quantity, latitude, longitude } = req.body;
     var uidProduct;
 
-    const verifyProductExists = await productRef
-      .where("displayName", "==", displayName)
-      .get()
-      .catch((err) => {
+    const verifyProductExists = await VerifyProductExists(displayName).catch(
+      (err) => {
         console.log(err.message);
         return res.status(500).json({ err });
-      });
+      }
+    );
 
     if (!verifyProductExists.empty) {
       verifyProductExists.forEach((doc) => {
         uidProduct = doc.id;
       });
 
-      const range = getGeohashRange(
+      const range = GetGeohashRange(
         parseFloat(latitude),
         parseFloat(longitude),
         10
       );
 
-      const verifyLocation = await productRef
-        .doc(uidProduct)
-        .collection("Shops")
-        .where("hash", ">=", range.lower)
-        .where("hash", "<=", range.upper)
-        .get()
-        .catch((err) => {
+      const verifyLocation = await VerifyLocation(uidProduct, range).catch(
+        (err) => {
           console.log(err.message);
           return res.status(500).json({ err });
-        });
-
+        }
+      );
       var foundLocation = false;
 
       if (!verifyLocation.empty) {
@@ -131,9 +125,48 @@ class ProductController {
       return res.json("Produto não foi encontrado na nossa base.");
     }
   }
-}
 
-function getGeohashRange(latitude, longitude, distance /* miles */) {
+  async bestShop(req, res) {
+    const { shoplist, longitude, latitude } = req.body;
+    let availabilityShop = new Object();
+    var uidProduct;
+    const range = GetGeohashRange(
+      parseFloat(latitude),
+      parseFloat(longitude),
+      10
+    );
+    for (const product of shoplist) {
+      const verifyProductExists = await VerifyProductExists(
+        product.displayName
+      ).catch((err) => {
+        console.log(err.message);
+        return res.status(500).json({ err });
+      });
+
+      if (!verifyProductExists.empty) {
+        verifyProductExists.forEach((doc) => {
+          uidProduct = doc.id;
+        });
+
+        const verifyLocation = await VerifyLocation(uidProduct, range);
+
+        if (!verifyLocation.empty) {
+          verifyLocation.forEach((doc) => {
+            if (doc.data().quantity >= product.quantity) {
+              if (typeof availabilityShop[doc.data().email] == "undefined") {
+                availabilityShop[doc.data().email] = [product.displayName];
+              } else {
+                availabilityShop[doc.data().email].push(product.displayName);
+              }
+            }
+          });
+        }
+       return res.json(Object.entries(availabilityShop));
+      }
+    }
+  }
+}
+function GetGeohashRange(latitude, longitude, distance /* miles */) {
   const lat = 0.0144927536231884; // degrees latitude per mile
   const lon = 0.0181818181818182; // degrees longitude per mile
 
@@ -150,6 +183,25 @@ function getGeohashRange(latitude, longitude, distance /* miles */) {
     lower,
     upper,
   };
+}
+
+async function VerifyProductExists(displayName) {
+  const verifyProductExists = await productRef
+    .where("displayName", "==", displayName)
+    .get();
+
+  return verifyProductExists;
+}
+
+async function VerifyLocation(uidProduct, range) {
+  const verifyLocation = await productRef
+    .doc(uidProduct)
+    .collection("Shops")
+    .where("hash", ">=", range.lower)
+    .where("hash", "<=", range.upper)
+    .get();
+
+  return verifyLocation;
 }
 
 module.exports = new ProductController();
