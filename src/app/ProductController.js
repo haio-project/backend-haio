@@ -113,12 +113,12 @@ class ProductController {
         verifyLocation.forEach((doc) => {
           if (doc.data().quantity >= quantity) {
             foundLocation = true;
-            return res.json("Produto disponível");
           }
         });
 
         if (!foundLocation)
           return res.json("Produto não disponível na quantidade desejada.");
+        else return res.json("Produto disponível");
       } else {
         return res.json("Produto não está disponível na região.");
       }
@@ -150,7 +150,12 @@ class ProductController {
           uidProduct = doc.id;
         });
 
-        const verifyLocation = await VerifyLocation(uidProduct, range);
+        const verifyLocation = await VerifyLocation(uidProduct, range).catch(
+          (err) => {
+            console.log(err.message);
+            return res.status(500).json({ err });
+          }
+        );
 
         if (!verifyLocation.empty) {
           verifyLocation.forEach((doc) => {
