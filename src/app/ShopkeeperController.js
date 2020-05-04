@@ -1,3 +1,5 @@
+const axios = require("axios");
+
 const firebaseAdminConfig = require("../config/firebase");
 const firebaseAuthConfig = require("../config/firebaseAuth");
 
@@ -13,7 +15,7 @@ class ShopkeeperController {
       password,
       location,
       latitude,
-      longitude
+      longitude,
     } = req.body;
 
     const verifyEmailExists = await shopkeeperRef
@@ -41,6 +43,34 @@ class ShopkeeperController {
         .status(400)
         .json({ error: "Numero de registro já cadastrado" });
     }
+ 
+    /* API GR1D para validar CNPJ de varejo
+    try {
+      const {
+        data: {
+          cnae_principal: { codigo },
+        },
+      } = await axios.get(
+        `https://gateway.gr1d.io/sandbox/serpro/consulta-cnpj/v1/cnpj/${documentNumber}`,
+        {
+          headers: {
+            "X-Api-Key": process.env.GRID_KEY_CNPJ,
+          },
+        }
+      );
+      console.log(codigo);
+      const initialCodigo = codigo.substring(1, 2);
+      if (initialCodigo !== "47" || initialCodigo !== "46") {
+        return res.status(404).json({
+          error: "Seu CNPJ não é valido para varejo",
+        });
+      }
+    } catch (err) {
+      return res.status(500).json({ error: "GRID ERROR" });
+    }
+
+    */
+
     try {
       await shopkeeperRef.doc(email).set({
         displayName,
